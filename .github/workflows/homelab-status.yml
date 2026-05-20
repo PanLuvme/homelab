@@ -18,28 +18,51 @@ jobs:
         run: |
           set -e
           
-          # Using your public domain directly
           HUB_URL="https://beszel.pandashii.com"
           
-          echo "Authenticating with Beszel Hub..."
-          TOKEN=$(curl -s -f -X POST "${HUB_URL}/api/collections/users/auth-with-password" \
+          echo "Attempting to authenticate..."
+          # 1. Try standard user authentication
+          AUTH_RESP=$(curl -s -X POST "${HUB_URL}/api/collections/users/auth-with-password" \
             -H "Content-Type: application/json" \
-            -d "{\"identity\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" \
-            | jq -r '.token')
-            
-          echo "Fetching system status..."
+            -d "{\"identity\":\"$EMAIL\",\"password\":\"$PASSWORD\"}")
+          
+          TOKEN=$(echo "$AUTH_RESP" | jq -r '.token // empty')
+          
+          # 2. If that failed, try admin authentication
+          if [ -z "$TOKEN" ] || [ "$TOKEN" == "null" ]; then
+            echo "User auth failed. Falling back to Admin auth..."
+            AUTH_RESP=$(curl -s -X POST "${HUB_URL}/api/admins/auth-with-password" \
+              -H "Content-Type: application/json" \
+              -d "{\"identity\":\"$EMAIL\",\"password\":\"$PASSWORD\"}")
+            TOKEN=$(echo "$AUTH_RESP" | jq -r '.token // empty')
+          fi
+          
+          # 3. If both failed, stop the script and show the error
+          if [ -z "$TOKEN" ] || [ "$TOKEN" == "null" ]; then
+            echo "Authentication completely failed. Please check your BESZEL_EMAIL and BESZEL_PASSWORD secrets."
+            echo "Server Response: $AUTH_RESP"
+            exit 1
+          fi
+          
+          echo "Successfully authenticated! Fetching system status..."
+          
+          # 4. Fetch the system nodes
           SYSTEMS=$(curl -s -f "${HUB_URL}/api/collections/systems/records" \
             -H "Authorization: Bearer $TOKEN")
             
           TOTAL=$(echo "$SYSTEMS" | jq '.totalItems')
           UP=$(echo "$SYSTEMS" | jq '[.items[] | select(.status == "up")] | length')
           
+          echo "Found $TOTAL systems. $UP are currently online."
+          
+          # 5. Determine the badge color
           if [ "$UP" -eq "$TOTAL" ]; then
             COLOR="success"
           else
             COLOR="critical"
           fi
           
+          # 6. Build the Shields.io JSON
           cat <<EOF > badge.json
           {
             "schemaVersion": 1,
@@ -49,5 +72,5 @@ jobs:
           }
           EOF
           
-          echo "Pushing to Gist..."
+          echo "Pushing badge data to GitHub Gist..."
           gh gist edit "$GIST_ID" badge.json
