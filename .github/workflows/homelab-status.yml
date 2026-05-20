@@ -9,29 +9,20 @@ jobs:
   update-badge:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Code
-        uses: actions/checkout@v4
-        
-      - name: Connect to Tailscale
-        uses: tailscale/github-action@v4
-        with:
-          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
-          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
-          tags: tag:github-runner
-          version: latest
-      
       - name: Fetch Beszel Data & Generate JSON
         env:
           EMAIL: ${{ secrets.BESZEL_EMAIL }}
           PASSWORD: ${{ secrets.BESZEL_PASSWORD }}
+          GH_TOKEN: ${{ secrets.GIST_TOKEN }}
+          GIST_ID: ${{ secrets.GIST_ID }}
         run: |
           set -e
           
-          # PocketBase API on your exact Tailscale IP
-          HUB_URL="http://100.70.76.106:8090" 
+          # Using your public domain directly
+          HUB_URL="https://beszel.pandashii.com"
           
           echo "Authenticating with Beszel Hub..."
-          TOKEN=$(curl -s -f -X POST "${HUB_URL}/api/admins/auth-with-password" \
+          TOKEN=$(curl -s -f -X POST "${HUB_URL}/api/collections/users/auth-with-password" \
             -H "Content-Type: application/json" \
             -d "{\"identity\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" \
             | jq -r '.token')
@@ -57,10 +48,6 @@ jobs:
             "color": "$COLOR"
           }
           EOF
-
-      - name: Push Badge Data to Gist
-        env:
-          GH_TOKEN: ${{ secrets.GIST_TOKEN }}
-          GIST_ID: ${{ secrets.GIST_ID }}
-        run: |
+          
+          echo "Pushing to Gist..."
           gh gist edit "$GIST_ID" badge.json
