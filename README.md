@@ -11,3 +11,6 @@ My Personal homelab architecture setup
 
 ![Oracle Server Status](https://img.shields.io/uptimerobot/status/m803111856-ab88ba770f497df925eedb84?label=Oracle%20VM)
 ![RPI Server Status](https://img.shields.io/uptimerobot/status/m803111877-c56b8c76d1ce6c784b38bfdd?label=Local%20RPI)
+
+
+![Live Server Card](https://gist.githubusercontent.com/PanLuvme/fab4de0ca19b8a574746457bed7aacb0/raw/server-card.svg)
