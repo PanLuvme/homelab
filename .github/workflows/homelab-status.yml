@@ -18,68 +18,71 @@ jobs:
         run: |
           set -e
           HUB_URL="https://beszel.pandashii.com"
+          USER_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
           
-          # Authenticate
-          AUTH_RESP=$(curl -s -X POST "${HUB_URL}/api/collections/users/auth-with-password" \
+          echo "Authenticating..."
+          AUTH_RESP=$(curl -s -A "$USER_AGENT" -X POST "${HUB_URL}/api/collections/users/auth-with-password" \
             -H "Content-Type: application/json" \
             -d "{\"identity\":\"$EMAIL\",\"password\":\"$PASSWORD\"}")
+          
+          if [[ "$AUTH_RESP" == \<\!DOCTYPE* ]] || [[ "$AUTH_RESP" == \<html* ]]; then
+            echo "🚨 CLOUDFLARE IS BLOCKING THE CONNECTION 🚨"
+            echo "Here is the page Cloudflare returned:"
+            echo "$AUTH_RESP"
+            exit 1
+          fi
+
           TOKEN=$(echo "$AUTH_RESP" | jq -r '.token // empty')
           
           if [ -z "$TOKEN" ]; then
-            AUTH_RESP=$(curl -s -X POST "${HUB_URL}/api/admins/auth-with-password" \
+            AUTH_RESP=$(curl -s -A "$USER_AGENT" -X POST "${HUB_URL}/api/admins/auth-with-password" \
               -H "Content-Type: application/json" \
               -d "{\"identity\":\"$EMAIL\",\"password\":\"$PASSWORD\"}")
             TOKEN=$(echo "$AUTH_RESP" | jq -r '.token // empty')
           fi
           
-          # Fetch the systems
-          SYSTEMS=$(curl -s "${HUB_URL}/api/collections/systems/records" -H "Authorization: Bearer $TOKEN")
+          if [ -z "$TOKEN" ]; then
+             echo "Authentication failed. Server response:"
+             echo "$AUTH_RESP"
+             exit 1
+          fi
           
-          # Extract stats for your primary server
-          # Note: Adjust the [0] index if your Oracle VM is not the first one in the list
+          echo "Successfully authenticated!"
+          
+          SYSTEMS=$(curl -s -A "$USER_AGENT" "${HUB_URL}/api/collections/systems/records" -H "Authorization: Bearer $TOKEN")
           TARGET_NODE=$(echo "$SYSTEMS" | jq '.items[0]')
           
-          # Parse names and format percentages to integers
           NAME=$(echo "$TARGET_NODE" | jq -r '.name')
           CPU=$(echo "$TARGET_NODE" | jq -r '.info.cpu | floor')
           MEM=$(echo "$TARGET_NODE" | jq -r '.info.mem | floor')
           DISK=$(echo "$TARGET_NODE" | jq -r '.info.disk | floor')
           
-          # Calculate progress bar pixel widths (Max width is 150px)
           CPU_BAR=$(( CPU * 150 / 100 ))
           MEM_BAR=$(( MEM * 150 / 100 ))
           DISK_BAR=$(( DISK * 150 / 100 ))
           
-          # Determine status color
           STATUS=$(echo "$TARGET_NODE" | jq -r '.status')
           if [ "$STATUS" == "up" ]; then STATUS_COLOR="#2ea043"; else STATUS_COLOR="#f85149"; fi
 
-          # Generate the SVG Card
           cat <<EOF > server-card.svg
           <svg width="320" height="160" viewBox="0 0 320 160" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <!-- Background Card -->
             <rect width="320" height="160" rx="10" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
-            
-            <!-- Header -->
             <circle cx="20" cy="25" r="5" fill="$STATUS_COLOR"/>
             <text x="35" y="30" fill="#c9d1d9" font-family="Arial, sans-serif" font-weight="bold" font-size="16">$NAME Stats</text>
             
-            <!-- CPU Row -->
             <text x="20" y="70" fill="#8b949e" font-family="Arial, sans-serif" font-size="13">CPU ($CPU%)</text>
             <rect x="120" y="60" width="150" height="10" rx="5" fill="#21262d"/>
             <rect x="120" y="60" width="$CPU_BAR" height="10" rx="5" fill="#58a6ff"/>
             
-            <!-- Memory Row -->
             <text x="20" y="105" fill="#8b949e" font-family="Arial, sans-serif" font-size="13">RAM ($MEM%)</text>
             <rect x="120" y="95" width="150" height="10" rx="5" fill="#21262d"/>
             <rect x="120" y="95" width="$MEM_BAR" height="10" rx="5" fill="#8957e5"/>
             
-            <!-- Disk Row -->
             <text x="20" y="140" fill="#8b949e" font-family="Arial, sans-serif" font-size="13">DISK ($DISK%)</text>
             <rect x="120" y="130" width="150" height="10" rx="5" fill="#21262d"/>
             <rect x="120" y="130" width="$DISK_BAR" height="10" rx="5" fill="#d2a8ff"/>
           </svg>
           EOF
           
-          # Upload to Gist
+          echo "Pushing to Gist..."
           gh gist edit "$GIST_ID" server-card.svg
