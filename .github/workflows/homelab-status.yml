@@ -1,15 +1,15 @@
-name: Update Homelab Badge
+name: Update Server Card UI
 
 on:
   schedule:
-    - cron: '*/15 * * * *' # Polls Beszel every 15 minutes
-  workflow_dispatch: # Allows you to run it manually
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
 
 jobs:
-  update-badge:
+  update-card:
     runs-on: ubuntu-latest
     steps:
-      - name: Fetch Beszel Data & Generate JSON
+      - name: Fetch Data & Generate SVG Card
         env:
           EMAIL: ${{ secrets.BESZEL_EMAIL }}
           PASSWORD: ${{ secrets.BESZEL_PASSWORD }}
@@ -17,60 +17,69 @@ jobs:
           GIST_ID: ${{ secrets.GIST_ID }}
         run: |
           set -e
-          
           HUB_URL="https://beszel.pandashii.com"
           
-          echo "Attempting to authenticate..."
-          # 1. Try standard user authentication
+          # Authenticate
           AUTH_RESP=$(curl -s -X POST "${HUB_URL}/api/collections/users/auth-with-password" \
             -H "Content-Type: application/json" \
             -d "{\"identity\":\"$EMAIL\",\"password\":\"$PASSWORD\"}")
-          
           TOKEN=$(echo "$AUTH_RESP" | jq -r '.token // empty')
           
-          # 2. If that failed, try admin authentication
-          if [ -z "$TOKEN" ] || [ "$TOKEN" == "null" ]; then
-            echo "User auth failed. Falling back to Admin auth..."
+          if [ -z "$TOKEN" ]; then
             AUTH_RESP=$(curl -s -X POST "${HUB_URL}/api/admins/auth-with-password" \
               -H "Content-Type: application/json" \
               -d "{\"identity\":\"$EMAIL\",\"password\":\"$PASSWORD\"}")
             TOKEN=$(echo "$AUTH_RESP" | jq -r '.token // empty')
           fi
           
-          # 3. If both failed, stop the script and show the error
-          if [ -z "$TOKEN" ] || [ "$TOKEN" == "null" ]; then
-            echo "Authentication completely failed. Please check your BESZEL_EMAIL and BESZEL_PASSWORD secrets."
-            echo "Server Response: $AUTH_RESP"
-            exit 1
-          fi
+          # Fetch the systems
+          SYSTEMS=$(curl -s "${HUB_URL}/api/collections/systems/records" -H "Authorization: Bearer $TOKEN")
           
-          echo "Successfully authenticated! Fetching system status..."
+          # Extract stats for your primary server
+          # Note: Adjust the [0] index if your Oracle VM is not the first one in the list
+          TARGET_NODE=$(echo "$SYSTEMS" | jq '.items[0]')
           
-          # 4. Fetch the system nodes
-          SYSTEMS=$(curl -s -f "${HUB_URL}/api/collections/systems/records" \
-            -H "Authorization: Bearer $TOKEN")
+          # Parse names and format percentages to integers
+          NAME=$(echo "$TARGET_NODE" | jq -r '.name')
+          CPU=$(echo "$TARGET_NODE" | jq -r '.info.cpu | floor')
+          MEM=$(echo "$TARGET_NODE" | jq -r '.info.mem | floor')
+          DISK=$(echo "$TARGET_NODE" | jq -r '.info.disk | floor')
+          
+          # Calculate progress bar pixel widths (Max width is 150px)
+          CPU_BAR=$(( CPU * 150 / 100 ))
+          MEM_BAR=$(( MEM * 150 / 100 ))
+          DISK_BAR=$(( DISK * 150 / 100 ))
+          
+          # Determine status color
+          STATUS=$(echo "$TARGET_NODE" | jq -r '.status')
+          if [ "$STATUS" == "up" ]; then STATUS_COLOR="#2ea043"; else STATUS_COLOR="#f85149"; fi
+
+          # Generate the SVG Card
+          cat <<EOF > server-card.svg
+          <svg width="320" height="160" viewBox="0 0 320 160" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <!-- Background Card -->
+            <rect width="320" height="160" rx="10" fill="#0d1117" stroke="#30363d" stroke-width="1"/>
             
-          TOTAL=$(echo "$SYSTEMS" | jq '.totalItems')
-          UP=$(echo "$SYSTEMS" | jq '[.items[] | select(.status == "up")] | length')
-          
-          echo "Found $TOTAL systems. $UP are currently online."
-          
-          # 5. Determine the badge color
-          if [ "$UP" -eq "$TOTAL" ]; then
-            COLOR="success"
-          else
-            COLOR="critical"
-          fi
-          
-          # 6. Build the Shields.io JSON
-          cat <<EOF > badge.json
-          {
-            "schemaVersion": 1,
-            "label": "Homelab",
-            "message": "$UP / $TOTAL Online",
-            "color": "$COLOR"
-          }
+            <!-- Header -->
+            <circle cx="20" cy="25" r="5" fill="$STATUS_COLOR"/>
+            <text x="35" y="30" fill="#c9d1d9" font-family="Arial, sans-serif" font-weight="bold" font-size="16">$NAME Stats</text>
+            
+            <!-- CPU Row -->
+            <text x="20" y="70" fill="#8b949e" font-family="Arial, sans-serif" font-size="13">CPU ($CPU%)</text>
+            <rect x="120" y="60" width="150" height="10" rx="5" fill="#21262d"/>
+            <rect x="120" y="60" width="$CPU_BAR" height="10" rx="5" fill="#58a6ff"/>
+            
+            <!-- Memory Row -->
+            <text x="20" y="105" fill="#8b949e" font-family="Arial, sans-serif" font-size="13">RAM ($MEM%)</text>
+            <rect x="120" y="95" width="150" height="10" rx="5" fill="#21262d"/>
+            <rect x="120" y="95" width="$MEM_BAR" height="10" rx="5" fill="#8957e5"/>
+            
+            <!-- Disk Row -->
+            <text x="20" y="140" fill="#8b949e" font-family="Arial, sans-serif" font-size="13">DISK ($DISK%)</text>
+            <rect x="120" y="130" width="150" height="10" rx="5" fill="#21262d"/>
+            <rect x="120" y="130" width="$DISK_BAR" height="10" rx="5" fill="#d2a8ff"/>
+          </svg>
           EOF
           
-          echo "Pushing badge data to GitHub Gist..."
-          gh gist edit "$GIST_ID" badge.json
+          # Upload to Gist
+          gh gist edit "$GIST_ID" server-card.svg
