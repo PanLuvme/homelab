@@ -1,0 +1,66 @@
+name: Update Homelab Badge
+
+on:
+  schedule:
+    - cron: '*/15 * * * *' # Polls Beszel every 15 minutes
+  workflow_dispatch: # Allows you to run it manually
+
+jobs:
+  update-badge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        
+      - name: Connect to Tailscale
+        uses: tailscale/github-action@v4
+        with:
+          oauth-client-id: ${{ secrets.TS_OAUTH_CLIENT_ID }}
+          oauth-secret: ${{ secrets.TS_OAUTH_SECRET }}
+          tags: tag:github-runner
+          version: latest
+      
+      - name: Fetch Beszel Data & Generate JSON
+        env:
+          EMAIL: ${{ secrets.BESZEL_EMAIL }}
+          PASSWORD: ${{ secrets.BESZEL_PASSWORD }}
+        run: |
+          set -e
+          
+          # PocketBase API on your exact Tailscale IP
+          HUB_URL="http://100.70.76.106:8090" 
+          
+          echo "Authenticating with Beszel Hub..."
+          TOKEN=$(curl -s -f -X POST "${HUB_URL}/api/admins/auth-with-password" \
+            -H "Content-Type: application/json" \
+            -d "{\"identity\":\"$EMAIL\",\"password\":\"$PASSWORD\"}" \
+            | jq -r '.token')
+            
+          echo "Fetching system status..."
+          SYSTEMS=$(curl -s -f "${HUB_URL}/api/collections/systems/records" \
+            -H "Authorization: Bearer $TOKEN")
+            
+          TOTAL=$(echo "$SYSTEMS" | jq '.totalItems')
+          UP=$(echo "$SYSTEMS" | jq '[.items[] | select(.status == "up")] | length')
+          
+          if [ "$UP" -eq "$TOTAL" ]; then
+            COLOR="success"
+          else
+            COLOR="critical"
+          fi
+          
+          cat <<EOF > badge.json
+          {
+            "schemaVersion": 1,
+            "label": "Homelab",
+            "message": "$UP / $TOTAL Online",
+            "color": "$COLOR"
+          }
+          EOF
+
+      - name: Push Badge Data to Gist
+        env:
+          GH_TOKEN: ${{ secrets.GIST_TOKEN }}
+          GIST_ID: ${{ secrets.GIST_ID }}
+        run: |
+          gh gist edit "$GIST_ID" badge.json
