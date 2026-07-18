@@ -116,3 +116,47 @@ flowchart TB
     class code,repo automation
     class hw hostnode
 ```
+
+
+<h2 align="center">Hardware:</h2>
+
+<table width="100%" align="center">
+  <tr>
+    <!-- Main PC -->
+    <td width="20%" align="center">
+      <img src="https://api.iconify.design/lucide:monitor.svg?color=%2358a6ff&width=48" alt="Main PC"><br><br>
+      <b>PC</b><br>
+      Ryzen 5 5600<br>
+      RX 9060 XT<br>
+      16GB RAM
+    </td>
+    <!-- MacBook Pro -->
+    <td width="20%" align="center">
+      <img src="https://api.iconify.design/lucide:laptop.svg?color=%2358a6ff&width=48" alt="MacBook Pro"><br><br>
+      <b>MacBook M4</b><br>
+      M4 Chip<br>
+      macOS
+    </td>
+    <!-- Proxmox Laptop -->
+    <td width="20%" align="center">
+      <img src="https://api.iconify.design/lucide:server.svg?color=%2358a6ff&width=48" alt="Proxmox Laptop"><br><br>
+      <b>Proxmox</b><br>
+      Zephyrus M15<br>
+      16GB RAM
+    </td>
+    <!-- RPI -->
+    <td width="20%" align="center">
+      <img src="https://api.iconify.design/lucide:cpu.svg?color=%2358a6ff&width=48" alt="RPI"><br><br>
+      <b>Raspberry Pi</b><br>
+      DietPi OS<br>
+      8GB RAM
+    </td>
+    <!-- Oracle Cloud Server -->
+    <td width="20%" align="center">
+      <img src="https://api.iconify.design/lucide:cloud.svg?color=%2358a6ff&width=48" alt="Oracle"><br><br>
+      <b>Oracle Cloud</b><br>
+      4 vCPU<br>
+      24GB RAM
+    </td>
+  </tr>
+</table>
