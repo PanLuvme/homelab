@@ -118,45 +118,50 @@ flowchart TB
 ```
 
 
-<h2 align="center">Hardware:</h2>
 
-<table width="100%" align="center">
-  <tr>
-    <!-- Main PC -->
-    <td width="20%" align="center">
-      <img src="https://api.iconify.design/lucide:monitor.svg?color=%2358a6ff&width=48" alt="Main PC"><br><br>
-      <b>PC</b><br>
-      Ryzen 5 5600<br>
-      RX 9060 XT<br>
-      16GB RAM
-    </td>
-    <!-- MacBook Pro -->
-    <td width="20%" align="center">
-      <img src="https://api.iconify.design/lucide:laptop.svg?color=%2358a6ff&width=48" alt="MacBook Pro"><br><br>
-      <b>MacBook M4</b><br>
-      M4 Chip<br>
-      macOS
-    </td>
-    <!-- Proxmox Laptop -->
-    <td width="20%" align="center">
-      <img src="https://api.iconify.design/lucide:server.svg?color=%2358a6ff&width=48" alt="Proxmox Laptop"><br><br>
-      <b>Proxmox</b><br>
-      Zephyrus M15<br>
-      16GB RAM
-    </td>
-    <!-- RPI -->
-    <td width="20%" align="center">
-      <img src="https://api.iconify.design/lucide:cpu.svg?color=%2358a6ff&width=48" alt="RPI"><br><br>
-      <b>Raspberry Pi</b><br>
-      DietPi OS<br>
-      8GB RAM
-    </td>
-    <!-- Oracle Cloud Server -->
-    <td width="20%" align="center">
-      <img src="https://api.iconify.design/lucide:cloud.svg?color=%2358a6ff&width=48" alt="Oracle"><br><br>
-      <b>Oracle Cloud</b><br>
-      4 vCPU<br>
-      24GB RAM
-    </td>
-  </tr>
-</table>
+## <img src="https://fonts.gstatic.com/s/e/notoemoji/latest/2699_fe0f/512.gif" alt="⚙" width="20" height="20"> Devices
+
+<details>
+<summary><b>ASUS ROG Zephyrus M15 (GU502LV)</b> — Proxmox host</summary>
+
+- **Role** — Proxmox VE 9.2 homelab host (repaired: charger + new SSD)
+- **CPU** — Intel Core i7-10750H
+- **RAM** — 16 GB
+- **Storage** — 931 GB NVMe SSD
+
+</details>
+
+<details>
+<summary><b>Desktop PC</b> — gaming rig</summary>
+
+- **CPU** — AMD Ryzen 5 5600
+- **GPU** — XFX Swift RX 9060 XT 16 GB
+- **Motherboard** — ASUS ROG Strix B450-F Gaming
+- **RAM** — HyperX 16 GB DDR4-3200 (single stick)
+- **PSU** — Thermaltake Smart 700W
+- **Case** — NZXT H510
+- **Wi-Fi** — TP-Link Archer T5E
+
+</details>
+
+<details>
+<summary><b>Raspberry Pi 4</b> — always-on utility node</summary>
+
+- **Role** — Wake-on-LAN relay + Pi-hole / DNS
+
+</details>
+
+<details>
+<summary><b>MacBook M4</b> — workstation</summary>
+
+- **Role** — Admin machine (SSH, management)
+
+</details>
+
+<details>
+<summary><b>Oracle VPS</b> — cloud always-on</summary>
+
+- **Role** — Cloud box running Pandora
+- Candidate host for Wazuh
+
+</details>
