@@ -20,7 +20,7 @@ Servers Status:
 ![Oracle Server Status](https://img.shields.io/uptimerobot/status/m803111856-ab88ba770f497df925eedb84?label=Oracle%20VM)
 ![RPI Server Status](https://img.shields.io/uptimerobot/status/m803111877-c56b8c76d1ce6c784b38bfdd?label=%20RPI)
 ![ProxMox Status](https://img.shields.io/badge/ProxMox-WoL-orange)
-
+[![Status Page](https://img.shields.io/badge/Status_Page-live-2ea44f?logo=statuspage&logoColor=white)](https://status.pandashii.com)
 
 ```mermaid
 flowchart TB
